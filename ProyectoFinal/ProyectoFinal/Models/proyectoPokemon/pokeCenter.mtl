@@ -1,0 +1,24 @@
+newmtl blinn13SG
+illum 4
+Kd 0.00 0.00 0.00
+Ka 0.00 0.00 0.00
+Tf 1.00 1.00 1.00
+map_Kd rojo.jpg
+Ni 1.00
+Ks 0.50 0.50 0.50
+newmtl blinn14SG
+illum 4
+Kd 0.00 0.00 0.00
+Ka 0.00 0.00 0.00
+Tf 1.00 1.00 1.00
+map_Kd beige.jpg
+Ni 1.00
+Ks 0.50 0.50 0.50
+newmtl blinn15SG
+illum 4
+Kd 0.00 0.00 0.00
+Ka 0.00 0.00 0.00
+Tf 1.00 1.00 1.00
+map_Kd blanco.jpg
+Ni 1.00
+Ks 0.50 0.50 0.50
