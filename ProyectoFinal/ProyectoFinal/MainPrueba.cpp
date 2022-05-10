@@ -44,29 +44,29 @@ bool keys[1024];
 bool firstMouse = true;
 float range = 0.0f;
 
-
-
-
-
-
 float rot = 0.0f;
-float teleMov = 0.0f;
+bool teleMov = false;
+float teleRot = 0.0;
 float burbujaVert = 0.0f;
 float burbujaHorizontal = 0.0f;
 
 bool bandaMov = false;
 bool burbujaMov = false;
 
+bool abierta = false;
+bool cerrada = true;
+bool seMueve = false;
+float pokeRot = 0.0f;
 
-
-
-
+bool abiertaBase = false;
+bool cerradaBase = true;
+float pokeRotBase = 0.0f;
 
 float movCamera = 0.0f;
 
 // Light attributes
 glm::vec3 lightPos(0.0f, 0.0f, 0.0f);
-glm::vec3 PosIni(-95.0f, 1.0f, -45.0f);
+glm::vec3 PosIni(-5.3f, 1.0f, -1.5f);
 glm::vec3 lightDirection(0.0f, -1.0f, -1.0f);
 
 bool active;
@@ -77,7 +77,7 @@ GLfloat deltaTime = 0.0f;	// Time between current frame and last frame
 GLfloat lastFrame = 0.0f;  	// Time of last frame
 
 // Keyframes
-float posX =PosIni.x, posY = PosIni.y, posZ = PosIni.z, rotRodIzq = 0;
+float sprayX =PosIni.x, sprayY = PosIni.y, sprayZ = PosIni.z, rotSpray = 0, rotTapa = 0;
 
 #define MAX_FRAMES 9
 int i_max_steps = 190;
@@ -85,13 +85,15 @@ int i_curr_steps = 0;
 typedef struct _frame
 {
 	//Variables para GUARDAR Key Frames
-	float posX;		//Variable para PosicionX
-	float posY;		//Variable para PosicionY
-	float posZ;		//Variable para PosicionZ
+	float sprayX;		//Variable para PosicionX
+	float sprayY;		//Variable para PosicionY
+	float sprayZ;		//Variable para PosicionZ
 	float incX;		//Variable para IncrementoX
 	float incY;		//Variable para IncrementoY
 	float incZ;		//Variable para IncrementoZ
-	float rotRodIzq;
+	float rotSpray;
+	float rotIncSpray;
+	float rotTapa;
 	float rotInc;
 
 }FRAME;
@@ -103,10 +105,10 @@ int playIndex = 0;
 
 // Positions of the point lights
 glm::vec3 pointLightPositions[] = {
-	glm::vec3(posX,posY,posZ),
-	glm::vec3(0,0,0),
-	glm::vec3(0,0,0),
-	glm::vec3(0,0,0)
+	glm::vec3(0,9,0),
+	glm::vec3(-6,5.5,-8.5),
+	glm::vec3(-6,5.5,8.5),
+	glm::vec3(-4.5,5.5,0)
 };
 
 glm::vec3 LightP1;
@@ -117,13 +119,14 @@ glm::vec3 LightP1;
 void saveFrame(void)
 {
 
-	printf("posx %f\n", posX);
+	printf("posx %f\n", sprayX);
 	
-	KeyFrame[FrameIndex].posX = posX;
-	KeyFrame[FrameIndex].posY = posY;
-	KeyFrame[FrameIndex].posZ = posZ;
+	KeyFrame[FrameIndex].sprayX = sprayX;
+	KeyFrame[FrameIndex].sprayY = sprayY;
+	KeyFrame[FrameIndex].sprayZ = sprayZ;
 	
-	KeyFrame[FrameIndex].rotRodIzq = rotRodIzq;
+	KeyFrame[FrameIndex].rotSpray = rotSpray;
+	KeyFrame[FrameIndex].rotTapa = rotTapa;
 	
 
 	FrameIndex++;
@@ -131,42 +134,42 @@ void saveFrame(void)
 
 void resetElements(void)
 {
-	posX = KeyFrame[0].posX;
-	posY = KeyFrame[0].posY;
-	posZ = KeyFrame[0].posZ;
+	sprayX = KeyFrame[0].sprayX;
+	sprayY = KeyFrame[0].sprayY;
+	sprayZ = KeyFrame[0].sprayZ;
 
-	rotRodIzq = KeyFrame[0].rotRodIzq;
+	rotSpray = KeyFrame[0].rotSpray;
+	rotTapa = KeyFrame[0].rotTapa;
 
 }
 
 void interpolation(void)
 {
 
-	KeyFrame[playIndex].incX = (KeyFrame[playIndex + 1].posX - KeyFrame[playIndex].posX) / i_max_steps;
-	KeyFrame[playIndex].incY = (KeyFrame[playIndex + 1].posY - KeyFrame[playIndex].posY) / i_max_steps;
-	KeyFrame[playIndex].incZ = (KeyFrame[playIndex + 1].posZ - KeyFrame[playIndex].posZ) / i_max_steps;
-	
-	KeyFrame[playIndex].rotInc = (KeyFrame[playIndex + 1].rotRodIzq - KeyFrame[playIndex].rotRodIzq) / i_max_steps;
+	KeyFrame[playIndex].incX = (KeyFrame[playIndex + 1].sprayX - KeyFrame[playIndex].sprayX) / i_max_steps;
+	KeyFrame[playIndex].incY = (KeyFrame[playIndex + 1].sprayY - KeyFrame[playIndex].sprayY) / i_max_steps;
+	KeyFrame[playIndex].incZ = (KeyFrame[playIndex + 1].sprayZ - KeyFrame[playIndex].sprayZ) / i_max_steps;
+
+
+	KeyFrame[playIndex].rotIncSpray = (KeyFrame[playIndex + 1].rotSpray - KeyFrame[playIndex].rotSpray) / i_max_steps;
+	KeyFrame[playIndex].rotInc = (KeyFrame[playIndex + 1].rotTapa - KeyFrame[playIndex].rotTapa) / i_max_steps;
 
 }
 
-
+void setFramesValues(float posSprayX, float posSprayY, float posSprayZ, float rotRotTapa, float rotRotSpray)
+{
+	sprayX = posSprayX;
+	sprayY = posSprayY;
+	sprayZ = posSprayZ;
+	rotSpray = rotRotSpray;
+	rotTapa = rotRotTapa;
+}
 
 
 int main()
 {
 	// Init GLFW
 	glfwInit();
-
-
-
-
-	// Set all the required options for GLFW
-	/*(GLFW_CONTEXT_VERSION_MAJOR, 3);
-	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
-	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-	glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
-	glfwWindowHint(GLFW_RESIZABLE, GL_FALSE);*/
 
 	// Create a GLFWwindow object that we can use for GLFW's functions
 	GLFWwindow* window = glfwCreateWindow(WIDTH, HEIGHT, "Practica 12", nullptr, nullptr);
@@ -213,79 +216,26 @@ int main()
 	Shader SkyBoxshader("Shaders/SkyBox.vs", "Shaders/SkyBox.frag");
 	Shader animShader("Shaders/anim.vs", "Shaders/anim.frag");
 
-	/*Model BotaDer((char*)"Models/Personaje/bota.obj");
-	Model PiernaDer((char*)"Models/Personaje/piernader.obj");
-	Model PiernaIzq((char*)"Models/Personaje/piernaizq.obj");
-	Model Torso((char*)"Models/Personaje/torso.obj");
-	Model BrazoDer((char*)"Models/Personaje/brazoder.obj");
-	Model BrazoIzq((char*)"Models/Personaje/brazoizq.obj");
-	Model Cabeza((char*)"Models/Personaje/cabeza.obj");*/
-
-
-
-
-
-
-
-
-
-
-
-
-
+	//Inclusion de modelos del proyecto
 	Model pokeFachada((char*)"Models/proyectoPokemon/pokeFachada.obj");
-
 	Model pokeSillon((char*)"Models/proyectoPokemon/pokeSillon.obj");
 	Model pokeMesa((char*)"Models/proyectoPokemon/pokeMesa.obj");
 	Model pokeLibrero((char*)"Models/proyectoPokemon/pokeLibrero.obj");
 	Model pokeMaquina((char*)"Models/proyectoPokemon/pokeMaquina.obj");
-	
+	Model pokeLetrero((char*)"Models/proyectoPokemon/pokeLetrero.obj");
 	Model pokeBancoAmarillo((char*)"Models/proyectoPokemon/pokeBancoAmarillo.obj");
 	Model pokeBancoRosa((char*)"Models/proyectoPokemon/pokeBancoRosa.obj");
 	Model pokeMaceta((char*)"Models/proyectoPokemon/pokeMaceta.obj");
-
-
 	Model pokeBanda((char*)"Models/proyectoPokemon/pokeBanda.obj");
-
-
-
 	Model pokeTele((char*)"Models/proyectoPokemon/pokeTele.obj");
-
+	Model basePokeBola((char*)"Models/proyectoPokemon/basePokeBola.obj");
+	Model tapaPokeBola((char*)"Models/proyectoPokemon/tapaPokeBola.obj");
+	Model basePokeBotiquin((char*)"Models/proyectoPokemon/basePokeBotiquin.obj");
+	Model tapaPokeBotiquin((char*)"Models/proyectoPokemon/tapaPokeBotiquin.obj");
+	Model pokeSpray((char*)"Models/proyectoPokemon/pokeSpray.obj");
 	Model pokeBurbujas((char*)"Models/proyectoPokemon/pokeBurbujas.obj");
-	
 	Model pokeVidrio((char*)"Models/proyectoPokemon/pokeVidrio.obj");
 	Model pokeTubos((char*)"Models/proyectoPokemon/pokeTubos.obj");
-	
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-	//Objeto traslucido
-	/*Model objTras("Models/Cubo/Cube01.obj");*/
 
 	// Build and compile our shader program
 
@@ -293,11 +243,13 @@ int main()
 	
 	for(int i=0; i<MAX_FRAMES; i++)
 	{
-		KeyFrame[i].posX = 0;
+		KeyFrame[i].sprayX = 0;
+		KeyFrame[i].sprayY = 0;
+		KeyFrame[i].sprayZ = 0;
 		KeyFrame[i].incX = 0;
 		KeyFrame[i].incY = 0;
 		KeyFrame[i].incZ = 0;
-		KeyFrame[i].rotRodIzq = 0;
+		KeyFrame[i].rotTapa = 0;
 		KeyFrame[i].rotInc = 0;
 	}
 
@@ -484,6 +436,33 @@ int main()
 
 	glm::mat4 projection = glm::perspective(camera.GetZoom(), (GLfloat)SCREEN_WIDTH / (GLfloat)SCREEN_HEIGHT, 0.1f, 1000.0f);
 
+	//Animacion por keyframe
+
+	setFramesValues(-5.3, 1, -1.5,0,0);
+	saveFrame();
+	
+
+	setFramesValues(-5.3, 1, -1.5, 30,0);
+	saveFrame();
+
+	setFramesValues(-5.3, 1.5, -1.5, 30,0);
+	saveFrame();
+
+	setFramesValues(-5.0, 1.5, -0.5, 30,0);
+	saveFrame();
+
+	setFramesValues(-5.0, 2.5, -0.5, 30, 0);
+	saveFrame();
+
+	setFramesValues(-3.5, 2.5, -0.5, 30, 90);
+	saveFrame();
+
+	setFramesValues(-3.5, 2.5, -0.5, 30, 90);
+	saveFrame();
+
+	setFramesValues(-5.3, 1, -1.5, 0,0);
+	saveFrame();
+
 	// Game loop
 	while (!glfwWindowShouldClose(window))
 	{
@@ -551,30 +530,30 @@ int main()
 
 		// Point light 2
 		glUniform3f(glGetUniformLocation(lightingShader.Program, "pointLights[1].position"), pointLightPositions[1].x, pointLightPositions[1].y, pointLightPositions[1].z);
-		glUniform3f(glGetUniformLocation(lightingShader.Program, "pointLights[1].ambient"), 0.05f, 0.05f, 0.05f);
-		glUniform3f(glGetUniformLocation(lightingShader.Program, "pointLights[1].diffuse"), 1.0f, 1.0f, 0.0f);
-		glUniform3f(glGetUniformLocation(lightingShader.Program, "pointLights[1].specular"), 1.0f, 1.0f, 0.0f);
+		glUniform3f(glGetUniformLocation(lightingShader.Program, "pointLights[1].ambient"), 1.0f, 0.0f, 0.0f);
+		glUniform3f(glGetUniformLocation(lightingShader.Program, "pointLights[1].diffuse"), 1.0f, 0.0f, 0.0f);
+		glUniform3f(glGetUniformLocation(lightingShader.Program, "pointLights[1].specular"), 1.0f, 1.0f, 1.0f);
 		glUniform1f(glGetUniformLocation(lightingShader.Program, "pointLights[1].constant"), 1.0f);
-		glUniform1f(glGetUniformLocation(lightingShader.Program, "pointLights[1].linear"), 0.09f);
-		glUniform1f(glGetUniformLocation(lightingShader.Program, "pointLights[1].quadratic"), 0.032f);
+		glUniform1f(glGetUniformLocation(lightingShader.Program, "pointLights[1].linear"), 0.7f);
+		glUniform1f(glGetUniformLocation(lightingShader.Program, "pointLights[1].quadratic"), 1.8f);
 
 		// Point light 3
 		glUniform3f(glGetUniformLocation(lightingShader.Program, "pointLights[2].position"), pointLightPositions[2].x, pointLightPositions[2].y, pointLightPositions[2].z);
-		glUniform3f(glGetUniformLocation(lightingShader.Program, "pointLights[2].ambient"), 0.05f, 0.05f, 0.05f);
-		glUniform3f(glGetUniformLocation(lightingShader.Program, "pointLights[2].diffuse"), 0.0f, 1.0f, 1.0f);
-		glUniform3f(glGetUniformLocation(lightingShader.Program, "pointLights[2].specular"), 0.0f, 1.0f, 1.0f);
+		glUniform3f(glGetUniformLocation(lightingShader.Program, "pointLights[2].ambient"), 1.0f, 0.0f, 0.0f);
+		glUniform3f(glGetUniformLocation(lightingShader.Program, "pointLights[2].diffuse"), 1.0f, 0.0f, 0.0f);
+		glUniform3f(glGetUniformLocation(lightingShader.Program, "pointLights[2].specular"), 1.0f, 1.0f, 1.0f);
 		glUniform1f(glGetUniformLocation(lightingShader.Program, "pointLights[2].constant"), 1.0f);
-		glUniform1f(glGetUniformLocation(lightingShader.Program, "pointLights[2].linear"), 0.09f);
-		glUniform1f(glGetUniformLocation(lightingShader.Program, "pointLights[2].quadratic"), 0.032f);
+		glUniform1f(glGetUniformLocation(lightingShader.Program, "pointLights[2].linear"), 0.7f);
+		glUniform1f(glGetUniformLocation(lightingShader.Program, "pointLights[2].quadratic"), 1.8f);
 
 		// Point light 4
 		glUniform3f(glGetUniformLocation(lightingShader.Program, "pointLights[3].position"), pointLightPositions[3].x, pointLightPositions[3].y, pointLightPositions[3].z);
-		glUniform3f(glGetUniformLocation(lightingShader.Program, "pointLights[3].ambient"), 0.05f, 0.05f, 0.05f);
-		glUniform3f(glGetUniformLocation(lightingShader.Program, "pointLights[3].diffuse"), 1.0f, 0.0f, 1.0f);
-		glUniform3f(glGetUniformLocation(lightingShader.Program, "pointLights[3].specular"), 1.0f, 0.0f, 1.0f);
+		glUniform3f(glGetUniformLocation(lightingShader.Program, "pointLights[3].ambient"), 0.4f, 0.4f, 0.4f);
+		glUniform3f(glGetUniformLocation(lightingShader.Program, "pointLights[3].diffuse"), 0.4f, 0.4f, 0.4f);
+		glUniform3f(glGetUniformLocation(lightingShader.Program, "pointLights[3].specular"), 1.0f, 1.0f, 1.0f);
 		glUniform1f(glGetUniformLocation(lightingShader.Program, "pointLights[3].constant"), 1.0f);
-		glUniform1f(glGetUniformLocation(lightingShader.Program, "pointLights[3].linear"), 0.09f);
-		glUniform1f(glGetUniformLocation(lightingShader.Program, "pointLights[3].quadratic"), 0.032f);
+		glUniform1f(glGetUniformLocation(lightingShader.Program, "pointLights[3].linear"), 0.045f);
+		glUniform1f(glGetUniformLocation(lightingShader.Program, "pointLights[3].quadratic"), 0.0075f);
 
 		// SpotLight
 		glUniform3f(glGetUniformLocation(lightingShader.Program, "spotLight.position"), camera.GetPosition().x, camera.GetPosition().y, camera.GetPosition().z);
@@ -653,9 +632,9 @@ int main()
 		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
 		pokeMaquina.Draw(lightingShader);
 
-		//Tele
+		//Base botiquin
 		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
-		pokeTele.Draw(lightingShader);
+		basePokeBotiquin.Draw(lightingShader);
 
 		//Maceta
 		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
@@ -684,6 +663,61 @@ int main()
 		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
 		pokeBanda.Draw(lightingShader);
 
+		//Tapa botiquin
+		model = glm::mat4(1);
+		model = glm::translate(model, glm::vec3(-5.3, 1.5, -2.1));
+		model = glm::rotate(model, glm::radians(-rotTapa), glm::vec3(1.0f, 0.0f, 0.0));
+		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
+		tapaPokeBotiquin.Draw(lightingShader);
+
+		//Spray
+		model = glm::mat4(1);
+		model = glm::translate(model, glm::vec3(sprayX, sprayY, sprayZ));
+		model = glm::rotate(model, glm::radians(-rotSpray), glm::vec3(0.0f, 0.0f, 1.0));
+		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
+		pokeSpray.Draw(lightingShader);
+
+		//Base pokebola
+		model = glm::mat4(1);
+		model = glm::translate(model, glm::vec3(-4, 2.5, -3.5));
+		model = glm::rotate(model, glm::radians(45.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+		model = glm::rotate(model, glm::radians(pokeRotBase), glm::vec3(1.0f, 0.0f, 0.0f));
+		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
+		basePokeBola.Draw(lightingShader);
+
+		//Tapa pokebola
+		model = glm::mat4(1);
+		model = glm::translate(model, glm::vec3(-4, 2.5, -3.5));
+		model = glm::rotate(model, glm::radians(45.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+		model = glm::rotate(model, glm::radians(pokeRot), glm::vec3(1.0f, 0.0f, 0.0f));
+		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
+		tapaPokeBola.Draw(lightingShader);
+
+
+		//Base pokebola
+		model = glm::mat4(1);
+		model = glm::translate(model, glm::vec3(-4, 2.5, 2.5));
+		model = glm::rotate(model, glm::radians(135.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+		model = glm::rotate(model, glm::radians(pokeRotBase), glm::vec3(1.0f, 0.0f, 0.0f));
+		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
+		basePokeBola.Draw(lightingShader);
+
+		//Tapa pokebola
+		model = glm::mat4(1);
+		model = glm::translate(model, glm::vec3(-4, 2.5, 2.5));
+		model = glm::rotate(model, glm::radians(135.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+		model = glm::rotate(model, glm::radians(pokeRot), glm::vec3(1.0f, 0.0f, 0.0f));
+		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
+		tapaPokeBola.Draw(lightingShader);
+
+		//Tele
+		model = glm::mat4(1);
+		model = glm::translate(model, glm::vec3(-5.7, 4.2, -0.2));
+		model = glm::rotate(model, glm::radians(teleRot), glm::vec3(0.0f, 0.0f, 1.0f));
+		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
+		pokeTele.Draw(lightingShader);
+
+
 		//Bancos Amarillos
 		model = glm::mat4(1);
 		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
@@ -709,70 +743,11 @@ int main()
 		model = glm::translate(model, glm::vec3(1, 0, -1.1));
 		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
 		pokeBancoRosa.Draw(lightingShader);
-
-		
-
-	//	//Pierna Izq
-	//	view = camera.GetViewMatrix();
-	//	model = glm::translate(tmp, glm::vec3(-0.5f, 0.0f, -0.1f));
-	//	model = glm::translate(model, glm::vec3(posX, posY, posZ));
-	//	model = glm::rotate(model, glm::radians(rot), glm::vec3(0.0f, 1.0f, 0.0));
-	//	model = glm::rotate(model, glm::radians(-rotRodIzq), glm::vec3(1.0f, 0.0f, 0.0f));
-	//	glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
-	//	glUniform1f(glGetUniformLocation(lightingShader.Program, "transparencia"), 0.0);
-	//	PiernaDer.Draw(lightingShader);
-	// 
-	// 
-	////	Pie Izq
-	//	view = camera.GetViewMatrix();
-	//	model = glm::translate(model, glm::vec3(0, -0.9f, -0.2f));
-	//	glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
-	//	BotaDer.Draw(lightingShader);
-
-	//	//Pierna Der
-	//	view = camera.GetViewMatrix();
-	//	model = glm::translate(tmp, glm::vec3(0.5f, 0.0f, -0.1f));
-	//	model = glm::translate(model, glm::vec3(posX, posY, posZ));
-	//	model = glm::rotate(model, glm::radians(rot), glm::vec3(0.0f, 1.0f, 0.0f));
-	//	glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
-	//	glUniform1f(glGetUniformLocation(lightingShader.Program, "transparencia"), 0.0);
-
-	//	PiernaIzq.Draw(lightingShader);
-	//	//Pie Der
-	//	view = camera.GetViewMatrix();
-	//	model = glm::translate(model, glm::vec3(0, -0.9f, -0.2f));
-	//	glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
-	//	BotaDer.Draw(lightingShader);
-
-	//	//Brazo derecho
-	//	view = camera.GetViewMatrix();
-	//	model = glm::mat4(1);
-	//	model = glm::translate(model, glm::vec3(posX, posY, posZ));
-	//	model = glm::rotate(model, glm::radians(rot), glm::vec3(0.0f, 1.0f, 0.0f));
-	//	model = glm::rotate(model, glm::radians(-rotRodIzq), glm::vec3(1.0f, 0.0f, 0.0f));
-	//	model = glm::translate(model, glm::vec3(-0.75f, 2.5f, 0));
-	//	glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
-	//	BrazoDer.Draw(lightingShader);
-
-	////	Brazo Izquierdo
-	//	view = camera.GetViewMatrix();
-	//	model = glm::mat4(1);
-	//	model = glm::translate(model, glm::vec3(posX, posY, posZ));
-	//	model = glm::rotate(model, glm::radians(rot), glm::vec3(0.0f, 1.0f, 0.0f));
-	//	model = glm::translate(model, glm::vec3(0.75f, 2.5f, 0));
-	//	glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
-	//	BrazoIzq.Draw(lightingShader);
-
-	//	//Cabeza
-	//	view = camera.GetViewMatrix();
-	//	model = glm::mat4(1);
-	//	model = glm::translate(model, glm::vec3(posX, posY, posZ));
-	//	model = glm::rotate(model, glm::radians(rot), glm::vec3(0.0f, 1.0f, 0.0));
-	//	model = glm::translate(model, glm::vec3(0.0f, 2.5f, 0));
-	//	glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
-	//	glUniform1f(glGetUniformLocation(lightingShader.Program, "transparencia"), 0.0);
-	//	Cabeza.Draw(lightingShader);
 	
+		model = glm::mat4(1);
+		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
+		pokeLetrero.Draw(lightingShader);
+
 		//Traslucidez
 
 		glEnable(GL_BLEND);
@@ -832,7 +807,7 @@ int main()
 			model = glm::translate(model, pointLightPositions[i]);
 			model = glm::scale(model, glm::vec3(0.2f)); // Make it a smaller cube
 			glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
-			glDrawArrays(GL_TRIANGLES, 0, 36);
+			//glDrawArrays(GL_TRIANGLES, 0, 36);
 		}
 		glBindVertexArray(0);
 
@@ -885,11 +860,12 @@ void animacion()
 			else
 			{
 				//Draw animation
-				posX += KeyFrame[playIndex].incX;
-				posY += KeyFrame[playIndex].incY;
-				posZ += KeyFrame[playIndex].incZ;
+				sprayX += KeyFrame[playIndex].incX;
+				sprayY += KeyFrame[playIndex].incY;
+				sprayZ += KeyFrame[playIndex].incZ;
 
-				rotRodIzq += KeyFrame[playIndex].rotInc;
+				rotSpray += KeyFrame[playIndex].rotIncSpray;
+				rotTapa += KeyFrame[playIndex].rotInc;
 
 				i_curr_steps++;
 			}
@@ -920,7 +896,7 @@ void KeyCallback(GLFWwindow *window, int key, int scancode, int action, int mode
 
 	}
 
-	if (keys[GLFW_KEY_K])
+	if (keys[GLFW_KEY_V])
 	{
 		if (FrameIndex<MAX_FRAMES)
 		{
@@ -958,7 +934,28 @@ void KeyCallback(GLFWwindow *window, int key, int scancode, int action, int mode
 		}
 	}
 	
+	if (keys[GLFW_KEY_P])
+	{
+		if (seMueve == false)
+		{
+			seMueve = true;
+		}
+	}
 
+	if (keys[GLFW_KEY_M])
+	{
+		if (teleMov == false)
+		{
+
+			teleMov = true;
+
+		}
+		else
+		{
+			teleRot = 0.0f;
+			teleMov = false;
+		}
+	}
 
 	if (GLFW_KEY_ESCAPE == key && GLFW_PRESS == action)
 	{
@@ -1021,26 +1018,26 @@ void DoMovement()
 
 	if (keys[GLFW_KEY_2])
 	{
-		if (rotRodIzq<80.0f)
-			rotRodIzq += 1.0f;
+		if (rotTapa<80.0f)
+			rotTapa += 1.0f;
 			
 	}
 
 	if (keys[GLFW_KEY_3])
 	{
-		if (rotRodIzq>-45)
-			rotRodIzq -= 1.0f;
+		if (rotTapa>-45)
+			rotTapa -= 1.0f;
 		
 	}
 
 	
 
-	if (keys[GLFW_KEY_L])
+	if (teleMov)
 	{
 		
-		if (teleMov > 40.0f)
+		if (teleRot < 30.0f)
 		{
-			teleMov += 1.0f;
+			teleRot += 1.0f;
 		}
 		
 	}
@@ -1053,19 +1050,72 @@ void DoMovement()
 
 	if (burbujaMov == true)
 	{
-		if (burbujaVert < 6.1f)
+		if (burbujaVert < 6.0f)
 		{
-			if (burbujaVert == 6.0f)
+			burbujaVert += 0.01f;
+			
+		}
+		else 
+		{
+			burbujaVert = 0.0f;
+			burbujaMov = false;
+		}
+
+	}
+
+	if (seMueve)
+	{
+		if (cerrada && cerradaBase)
+		{
+			if (pokeRot > -45.0f)
 			{
-				burbujaVert = 0.01f;
+				pokeRot -= 0.1f;
 			}
 			else
 			{
-				burbujaVert += 0.01f;
+				cerrada = false;
+				abierta = true;
+				seMueve = false;
 			}
-			
+
+			if (pokeRotBase < 45.0f)
+			{
+				pokeRotBase += 0.1f;
+			}
+			else
+			{
+				cerradaBase = false;
+				abiertaBase = true;
+				seMueve = false;
+			}
+
 		}
 
+		if (abierta && abiertaBase)
+		{
+			if ((pokeRot < 0.0f))
+			{
+				pokeRot += 0.1f;
+			}
+			else
+			{
+				cerrada = true;
+				abierta = false;
+				seMueve = false;
+			}
+
+			if ((pokeRotBase > 0.0f))
+			{
+				pokeRotBase -= 0.1f;
+			}
+			else
+			{
+				cerradaBase = true;
+				abiertaBase = false;
+				seMueve = false;
+			}
+
+		}
 	}
 
 	// Camera controls
